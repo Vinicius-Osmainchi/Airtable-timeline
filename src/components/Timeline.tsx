@@ -1,14 +1,8 @@
 import { useMemo } from "react";
-import { type TimelineItem } from "@/data/timelineItems";
 import { assignLanes } from "@/lib/assignLanes";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { TimelineHeader } from "./TimelineHeader";
+import { TimelineItem } from "./TimelineItem";
+import type { ItemData } from "@/data/timelineItems";
 
 const dateDiffInDays = (a: Date, b: Date): number => {
   const _MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -18,10 +12,11 @@ const dateDiffInDays = (a: Date, b: Date): number => {
 };
 
 interface TimelineProps {
-  items: TimelineItem[];
+  items: ItemData[];
+  onUpdateItem: (id: number, newName: string) => void;
 }
 
-export function Timeline({ items }: TimelineProps) {
+export function Timeline({ items, onUpdateItem }: TimelineProps) {
   const { lanes, startDate, totalDays, months } = useMemo(() => {
     if (items.length === 0) {
       return { lanes: [], startDate: new Date(), totalDays: 0, months: [] };
@@ -98,53 +93,36 @@ export function Timeline({ items }: TimelineProps) {
           })}
         </div>
 
-        <TooltipProvider>
-          {lanes.map((lane, laneIndex) => (
-            <div
-              key={laneIndex}
-              className="relative h-20 border-b last:border-b-0 z-10"
-            >
-              {lane.map((item) => {
-                const itemStart = new Date(item.start);
-                const itemEnd = new Date(item.end);
+        {lanes.map((lane, laneIndex) => (
+          <div
+            key={laneIndex}
+            className="relative h-20 border-b last:border-b-0 z-10"
+          >
+            {lane.map((item) => {
+              const itemStart = new Date(item.start);
+              const itemEnd = new Date(item.end);
 
-                const offset = dateDiffInDays(startDate, itemStart);
-                const duration = dateDiffInDays(itemStart, itemEnd) + 1;
+              const offset = dateDiffInDays(startDate, itemStart);
+              const duration = dateDiffInDays(itemStart, itemEnd) + 1;
 
-                const left = (offset / totalDays) * 100;
-                const width = (duration / totalDays) * 100;
+              const left = (offset / totalDays) * 100;
+              const width = (duration / totalDays) * 100;
 
-                return (
-                  <Tooltip key={item.id}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className="absolute top-0 h-16 my-2"
-                        style={{
-                          left: `${left}%`,
-                          width: `${width}%`,
-                        }}
-                      >
-                        <Card className="h-full bg-primary text-primary-foreground overflow-hidden hover:opacity-80 transition-opacity">
-                          <CardHeader className="p-2">
-                            <CardTitle className="text-sm truncate">
-                              {item.name}
-                            </CardTitle>
-                          </CardHeader>
-                        </Card>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{item.name}</p>
-                      <p>
-                        {item.start} a {item.end}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          ))}
-        </TooltipProvider>
+              return (
+                <div
+                  key={item.id}
+                  className="absolute top-0 h-16 my-2"
+                  style={{
+                    left: `${left}%`,
+                    width: `${width}%`,
+                  }}
+                >
+                  <TimelineItem item={item} onUpdateItem={onUpdateItem} />
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

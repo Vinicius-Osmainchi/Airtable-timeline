@@ -1,11 +1,11 @@
-export interface TimelineItem {
+export interface ItemData {
   id: number;
   start: string;
   end: string;
   name: string;
 }
 
-export const timelineItems: TimelineItem[] = [
+export const timelineItems: ItemData[] = [
   {
     id: 1,
     start: "2021-01-14",

@@ -14,13 +14,18 @@ interface TimelineItemProps {
   onUpdateItem: (id: number, newName: string) => void;
 }
 
+const portalContainerStyle: React.CSSProperties = {
+  position: "fixed",
+  zIndex: 50,
+};
+
 export function TimelineItem({ item, onUpdateItem }: TimelineItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const [position, setPosition] = useState<DOMRect | null>(null);
+  const [portalStyle, setPortalStyle] = useState<React.CSSProperties>({});
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -38,7 +43,26 @@ export function TimelineItem({ item, onUpdateItem }: TimelineItemProps) {
 
   const handleDoubleClick = () => {
     if (cardRef.current) {
-      setPosition(cardRef.current.getBoundingClientRect());
+      const rect = cardRef.current.getBoundingClientRect();
+      const inputMinWidth = 200;
+      const viewportWidth = window.innerWidth;
+
+      let finalLeft = rect.left;
+
+      if (rect.left + inputMinWidth > viewportWidth) {
+        const padding = 16;
+
+        finalLeft = viewportWidth - inputMinWidth - padding;
+      }
+
+      setPortalStyle({
+        top: rect.top,
+        left: finalLeft,
+        height: rect.height,
+
+        width: rect.width,
+      });
+
       setIsEditing(true);
     }
   };
@@ -51,18 +75,9 @@ export function TimelineItem({ item, onUpdateItem }: TimelineItemProps) {
     }
   };
 
-  if (isEditing && position) {
+  if (isEditing) {
     return createPortal(
-      <div
-        style={{
-          position: "fixed",
-          top: position.top,
-          left: position.left,
-          width: position.width,
-          height: position.height,
-          zIndex: 50,
-        }}
-      >
+      <div style={{ ...portalContainerStyle, ...portalStyle }}>
         <Input
           ref={inputRef}
           value={name}
@@ -75,7 +90,7 @@ export function TimelineItem({ item, onUpdateItem }: TimelineItemProps) {
       document.body
     );
   }
-return (
+  return (
     <Tooltip>
       <TooltipTrigger className="h-full w-full" asChild>
         <Card

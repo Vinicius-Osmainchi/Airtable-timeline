@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { TimelineHeader } from "./TimelineHeader";
 
 const dateDiffInDays = (a: Date, b: Date): number => {
   const _MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -21,9 +22,9 @@ interface TimelineProps {
 }
 
 export function Timeline({ items }: TimelineProps) {
-  const { lanes, startDate, totalDays } = useMemo(() => {
+  const { lanes, startDate, totalDays, months } = useMemo(() => {
     if (items.length === 0) {
-      return { lanes: [], startDate: new Date(), totalDays: 0 };
+      return { lanes: [], startDate: new Date(), totalDays: 0, months: [] };
     }
 
     const assignedLanes = assignLanes(items);
@@ -40,59 +41,109 @@ export function Timeline({ items }: TimelineProps) {
 
     const days = dateDiffInDays(minDate, maxDate) + 1;
 
-    return { lanes: assignedLanes, startDate: minDate, totalDays: days };
+    const monthMap = new Map<string, number>();
+    const current = new Date(minDate);
+    for (let i = 0; i < days; i++) {
+      const monthKey = `${current.getFullYear()}-${current.getMonth()}`;
+      monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1);
+      current.setDate(current.getDate() + 1);
+    }
+
+    const monthList = Array.from(monthMap.entries()).map(([key, dayCount]) => {
+      const [year, monthIndex] = key.split("-");
+      const date = new Date(parseInt(year), parseInt(monthIndex));
+      const monthName = date.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+      const width = (dayCount / days) * 100;
+      return { name: monthName, width, dayCount };
+    });
+
+    return {
+      lanes: assignedLanes,
+      startDate: minDate,
+      totalDays: days,
+      months: monthList,
+    };
   }, [items]);
 
   if (items.length === 0) {
     return <div>Nenhum item para exibir.</div>;
   }
 
+  let accumulatedLeft = 0;
+
   return (
     <div className="relative p-4">
-      <TooltipProvider>
-        {lanes.map((lane, laneIndex) => (
-          <div key={laneIndex} className="relative h-20 mb-2">
-            {lane.map((item) => {
-              const itemStart = new Date(item.start);
-              const itemEnd = new Date(item.end);
+      <TimelineHeader
+        startDate={startDate}
+        totalDays={totalDays}
+        months={months}
+      />
 
-              const offset = dateDiffInDays(startDate, itemStart);
-              const duration = dateDiffInDays(itemStart, itemEnd) + 1;
+      <div className="relative">
+        <div className="absolute top-0 left-0 w-full h-full grid z-0">
+          {months.map((month, index) => {
+            accumulatedLeft += month.width;
 
-              const left = (offset / totalDays) * 100;
-              const width = (duration / totalDays) * 100;
+            if (index === months.length - 1) return null;
 
-              return (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className="absolute top-0 h-16"
-                      style={{
-                        left: `${left}%`,
-                        width: `${width}%`,
-                      }}
-                    >
-                      <Card className="h-full bg-primary text-primary-foreground overflow-hidden">
-                        <CardHeader className="p-2">
-                          <CardTitle className="text-sm truncate">
-                            {item.name}
-                          </CardTitle>
-                        </CardHeader>
-                      </Card>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{item.name}</p>
-                    <p>
-                      {item.start} a {item.end}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-        ))}
-      </TooltipProvider>
+            return (
+              <div
+                key={`grid-${index}`}
+                className="absolute top-0 bottom-0 w-px bg-border"
+                style={{ left: `${accumulatedLeft}%` }}
+              />
+            );
+          })}
+        </div>
+
+        <TooltipProvider>
+          {lanes.map((lane, laneIndex) => (
+            <div key={laneIndex} className="relative h-20 mb-2 z-10">
+              {lane.map((item) => {
+                const itemStart = new Date(item.start);
+                const itemEnd = new Date(item.end);
+
+                const offset = dateDiffInDays(startDate, itemStart);
+                const duration = dateDiffInDays(itemStart, itemEnd) + 1;
+
+                const left = (offset / totalDays) * 100;
+                const width = (duration / totalDays) * 100;
+
+                return (
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="absolute top-0 h-16"
+                        style={{
+                          left: `${left}%`,
+                          width: `${width}%`,
+                        }}
+                      >
+                        <Card className="h-full bg-primary text-primary-foreground overflow-hidden hover:opacity-80 transition-opacity">
+                          <CardHeader className="p-2">
+                            <CardTitle className="text-sm truncate">
+                              {item.name}
+                            </CardTitle>
+                          </CardHeader>
+                        </Card>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{item.name}</p>
+                      <p>
+                        {item.start} a {item.end}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ))}
+        </TooltipProvider>
+      </div>
     </div>
   );
 }

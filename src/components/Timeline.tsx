@@ -75,7 +75,7 @@ export function Timeline({ items }: TimelineProps) {
   let accumulatedLeft = 0;
 
   return (
-    <div className="relative p-4">
+    <div className="p-4 bg-card rounded-lg border">
       <TimelineHeader
         startDate={startDate}
         totalDays={totalDays}
@@ -83,10 +83,9 @@ export function Timeline({ items }: TimelineProps) {
       />
 
       <div className="relative">
-        <div className="absolute top-0 left-0 w-full h-full grid z-0">
+        <div className="absolute top-0 left-0 w-full h-full z-0">
           {months.map((month, index) => {
             accumulatedLeft += month.width;
-
             if (index === months.length - 1) return null;
 
             return (
@@ -101,7 +100,10 @@ export function Timeline({ items }: TimelineProps) {
 
         <TooltipProvider>
           {lanes.map((lane, laneIndex) => (
-            <div key={laneIndex} className="relative h-20 mb-2 z-10">
+            <div
+              key={laneIndex}
+              className="relative h-20 border-b last:border-b-0 z-10"
+            >
               {lane.map((item) => {
                 const itemStart = new Date(item.start);
                 const itemEnd = new Date(item.end);
@@ -116,7 +118,7 @@ export function Timeline({ items }: TimelineProps) {
                   <Tooltip key={item.id}>
                     <TooltipTrigger asChild>
                       <div
-                        className="absolute top-0 h-16"
+                        className="absolute top-0 h-16 my-2"
                         style={{
                           left: `${left}%`,
                           width: `${width}%`,
